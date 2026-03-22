@@ -53,7 +53,7 @@ Download the `splitsmart.html` file and open it in any browser. That's it.
 
 ## Screenshots
 
-
+![SplitSmart App](dashboard/screenshot.png)
 ---
 
 ## Known issues / things I want to add
