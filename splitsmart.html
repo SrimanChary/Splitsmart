@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SplitSmart – Smart Bill Splitter</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF1FF;
+  --surface: #FFFFFF;
+  --surface2: #F5F7FF;
+  --primary: #4361EE;
+  --primary-light: #EEF1FF;
+  --primary-dark: #2D47C9;
+  --veg: #059669;
+  --veg-light: #ECFDF5;
+  --veg-mid: #D1FAE5;
+  --nonveg: #DC2626;
+  --nonveg-light: #FEF2F2;
+  --nonveg-mid: #FEE2E2;
+  --shared: #7C3AED;
+  --shared-light: #F5F3FF;
+  --text: #0F172A;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --shadow: 0 2px 16px rgba(67,97,238,0.07);
+  --shadow-lg: 0 8px 32px rgba(67,97,238,0.18);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── App Shell ── */
+.app-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 62px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 12px rgba(67,97,238,0.06);
+}
+.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 21px; letter-spacing: -0.5px; }
+.logo .split { color: var(--primary); }
+.logo .smart { color: var(--text); }
+.session-badge {
+  font-size: 13px; color: var(--muted); background: var(--surface2);
+  padding: 4px 12px; border-radius: 99px; border: 1px solid var(--border);
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Step Progress ── */
+.steps-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; }
+.steps { display: flex; align-items: center; max-width: 600px; margin: 0 auto; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; position: relative; }
+.step:not(:last-child)::after {
+  content: ''; position: absolute; top: 17px; left: 55%; width: 90%; height: 2px;
+  background: var(--border); z-index: 0; transition: background 0.4s;
+}
+.step.done:not(:last-child)::after { background: var(--primary); }
+.step-circle {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--surface2); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--muted); z-index: 1;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.step.active .step-circle {
+  background: var(--primary); border-color: var(--primary); color: #fff;
+  box-shadow: 0 0 0 5px rgba(67,97,238,0.18);
+}
+.step.done .step-circle { background: var(--primary); border-color: var(--primary); color: #fff; }
+.step-label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.step.active .step-label { color: var(--primary); font-weight: 600; }
+.step.done .step-label { color: var(--primary); }
+
+/* ── Layout ── */
+.main { max-width: 680px; margin: 0 auto; padding: 24px 16px 80px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface); border-radius: var(--radius); padding: 22px 24px;
+  box-shadow: var(--shadow); margin-bottom: 14px;
+  border: 1px solid rgba(67,97,238,0.06);
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+.card-sub { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
+
+/* ── Forms ── */
+input[type="text"], input[type="number"], select {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text);
+  background: var(--surface); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,0.1);
+}
+label { font-size: 13px; font-weight: 500; color: var(--muted); display: block; margin-bottom: 5px; }
+.field { margin-bottom: 14px; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; min-width: 0; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+  cursor: pointer; border: none; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+.btn-ghost { background: transparent; color: var(--muted); padding: 6px 10px; }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-sm { padding: 6px 13px; font-size: 13px; border-radius: var(--radius-xs); }
+.btn-icon { width: 34px; height: 34px; padding: 0; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; }
+.btn-danger { background: #FEF2F2; color: var(--nonveg); border: 1.5px solid #FEE2E2; }
+.btn-danger:hover { background: var(--nonveg); color: #fff; }
+
+/* ── Section header ── */
+.section-hd {
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+}
+.divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+/* ── People ── */
+.person-list { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.person-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 14px; background: var(--surface2);
+  border-radius: var(--radius-sm); border: 1.5px solid transparent;
+  transition: all 0.2s; animation: slideIn 0.28s ease both;
+}
+.person-item:hover { box-shadow: var(--shadow); }
+.person-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+  color: #fff; flex-shrink: 0; letter-spacing: 0.02em;
+}
+.person-name { font-weight: 500; font-size: 15px; flex: 1; }
+.paidby-chip {
+  font-size: 11px; padding: 2px 8px; border-radius: 99px;
+  background: #FFF7ED; color: #C2410C; border: 1px solid #FED7AA; font-weight: 600;
+}
+.diet-toggle { display: flex; background: var(--surface); border-radius: 99px; padding: 3px; border: 1.5px solid var(--border); gap: 2px; }
+.diet-btn { padding: 4px 9px; border-radius: 99px; border: none; font-size: 11px; font-weight: 600; cursor: pointer; background: transparent; color: var(--muted); transition: all 0.2s; white-space: nowrap; }
+.diet-btn.av { background: var(--veg); color: #fff; }
+.diet-btn.anv { background: var(--nonveg); color: #fff; }
+
+/* ── Add form box ── */
+.add-box {
+  background: var(--surface2); border-radius: var(--radius-sm);
+  padding: 14px 16px; border: 1.5px solid var(--border); margin-top: 6px;
+}
+.add-box-title { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 10px; }
+
+/* ── Tabs ── */
+.tabs { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; gap: 4px; margin-bottom: 18px; }
+.tab-btn {
+  flex: 1; padding: 9px 14px; border-radius: var(--radius-xs); border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  cursor: pointer; background: transparent; color: var(--muted); transition: all 0.2s;
+}
+.tab-btn.active { background: var(--surface); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+/* ── Item rows ── */
+.item-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm);
+  margin-bottom: 7px; animation: slideIn 0.25s ease both;
+  border: 1px solid transparent; transition: border-color 0.2s;
+}
+.item-row:hover { border-color: var(--border); }
+.item-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.item-name { flex: 1; font-size: 14px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qty-badge { font-size: 11px; color: var(--muted); background: var(--surface); border-radius: 4px; padding: 1px 6px; border: 1px solid var(--border); }
+.item-price { font-size: 14px; font-weight: 600; color: var(--primary); min-width: 58px; text-align: right; }
+.tag-pill {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px;
+  cursor: pointer; user-select: none; transition: all 0.15s; white-space: nowrap;
+}
+.tag-veg { background: var(--veg-light); color: var(--veg); border: 1px solid var(--veg-mid); }
+.tag-nonveg { background: var(--nonveg-light); color: var(--nonveg); border: 1px solid var(--nonveg-mid); }
+.tag-shared { background: var(--shared-light); color: var(--shared); border: 1px solid #DDD6FE; }
+.tag-pill:hover { opacity: 0.8; transform: scale(0.96); }
+
+/* ── Upload area ── */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 36px 20px; text-align: center; cursor: pointer;
+  transition: all 0.22s; background: var(--surface2);
+}
+.upload-zone:hover, .upload-zone.dragging { border-color: var(--primary); background: var(--primary-light); }
+.upload-icon-big { font-size: 44px; margin-bottom: 10px; display: block; }
+.upload-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 5px; }
+.upload-sub { font-size: 14px; color: var(--muted); }
+
+/* ── Shared assign ── */
+.shared-card {
+  background: var(--surface); border: 1.5px solid #DDD6FE; border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 2px 12px rgba(124,58,237,0.07);
+  animation: slideIn 0.3s ease both;
+}
+.shared-title { font-size: 13px; font-weight: 600; color: var(--shared); margin-bottom: 10px; }
+.chip-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.check-chip {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 99px; border: 1.5px solid #DDD6FE; font-size: 13px; font-weight: 500;
+  cursor: pointer; background: #F5F3FF; color: var(--shared); transition: all 0.15s; user-select: none;
+}
+.check-chip.on { background: var(--shared); color: #fff; border-color: var(--shared); }
+.check-chip .mini-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ── Adjustments ── */
+.adj-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.adj-label { min-width: 130px; font-size: 14px; font-weight: 500; color: var(--text); }
+.adj-wrap { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: var(--radius-sm); flex: 1; overflow: hidden; }
+.adj-wrap input { border: none; border-radius: 0; box-shadow: none !important; padding: 9px 12px; }
+.adj-unit {
+  padding: 9px 14px; background: var(--surface2); font-size: 14px; color: var(--muted);
+  font-weight: 600; cursor: pointer; user-select: none; border-left: 1.5px solid var(--border);
+  transition: all 0.2s; white-space: nowrap;
+}
+.adj-unit:hover { background: var(--primary-light); color: var(--primary); }
+.adj-preview { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 14px; }
+.adj-line { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+.adj-line.total { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; }
+
+/* ── Results ── */
+.hero-box {
+  background: linear-gradient(135deg, #4361EE 0%, #7C3AED 100%);
+  border-radius: var(--radius); padding: 26px; color: #fff; margin-bottom: 14px;
+  box-shadow: 0 8px 32px rgba(67,97,238,0.3);
+}
+.hero-title { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; margin-bottom: 2px; }
+.hero-date { font-size: 13px; opacity: 0.75; margin-bottom: 18px; }
+.hero-total { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; letter-spacing: -1px; margin-bottom: 20px; }
+.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-glass {
+  padding: 9px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.2s;
+  background: rgba(255,255,255,0.18); color: #fff;
+  backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.25);
+}
+.btn-glass:hover { background: rgba(255,255,255,0.28); transform: translateY(-1px); }
+.btn-glass.solid { background: #fff; color: var(--primary); }
+.btn-glass.solid:hover { background: #f0f0ff; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.metric-card { background: var(--surface); border-radius: var(--radius-sm); padding: 14px 12px; text-align: center; box-shadow: var(--shadow); }
+.metric-val { font-family: 'Syne', sans-serif; font-size: 21px; font-weight: 800; color: var(--primary); margin-bottom: 3px; }
+.metric-lbl { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Person result card ── */
+.pr-card {
+  background: var(--surface2); border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); padding: 14px 16px; margin-bottom: 10px;
+  overflow: hidden; transition: box-shadow 0.2s;
+}
+.pr-card:hover { box-shadow: var(--shadow); }
+.pr-header { display: flex; align-items: center; gap: 11px; cursor: pointer; }
+.pr-info { flex: 1; }
+.pr-name { font-weight: 600; font-size: 15px; }
+.pr-diet { font-size: 12px; font-weight: 500; margin-top: 1px; }
+.pr-amount { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+.pr-chevron { color: var(--muted); font-size: 18px; transition: transform 0.25s; }
+.pr-chevron.open { transform: rotate(90deg); }
+
+.bar-wrap { height: 5px; background: var(--border); border-radius: 99px; margin: 12px 0; overflow: hidden; }
+.bar { height: 100%; border-radius: 99px; width: 0%; transition: width 0.9s cubic-bezier(0.34,1.56,0.64,1); }
+
+.bd-list { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; border-top: 1px solid var(--border); }
+.bd-list.open { max-height: 500px; }
+.bd-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+.bd-row .bi { color: var(--muted); }
+.bd-row .ba { font-weight: 600; }
+
+/* ── Settlement ── */
+.settle-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; background: var(--surface2); border-radius: var(--radius-sm);
+  margin-bottom: 8px; animation: slideIn 0.3s ease both;
+  border: 1px solid var(--border);
+}
+.s-from { font-weight: 600; font-size: 14px; }
+.s-arrow { color: var(--primary); font-weight: 700; font-size: 18px; padding: 0 4px; }
+.s-to { font-weight: 600; font-size: 14px; }
+.s-amt { margin-left: auto; font-family: 'Syne', sans-serif; font-weight: 800; color: var(--primary); font-size: 17px; }
+.s-sub { font-size: 11px; color: var(--muted); }
+
+/* ── Spinner ── */
+.spin-box { display: flex; flex-direction: column; align-items: center; padding: 36px; gap: 14px; }
+.spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-text { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px; color: var(--muted); animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* ── Nav ── */
+.nav-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; gap: 10px; }
+
+/* ── Step pages ── */
+.step-page { display: none; animation: fadeIn 0.32s ease both; }
+.step-page.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:none} }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); font-size: 14px; border: 1.5px dashed var(--border); border-radius: var(--radius-sm); }
+.empty-ico { font-size: 30px; margin-bottom: 8px; }
+
+/* ── Animations ── */
+@keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1E293B; color: #fff; padding: 11px 22px; border-radius: 99px;
+  font-size: 14px; font-weight: 500; z-index: 9999;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Diet legend ── */
+.legend { display: flex; gap: 14px; font-size: 13px; margin-bottom: 14px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+/* ── Responsive ── */
+@media(max-width:500px){
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .adj-row{flex-direction:column;align-items:flex-start}
+  .adj-label{min-width:auto}
+  .adj-wrap{width:100%}
+  .hero-total{font-size:34px}
+  .main{padding:16px 10px 80px}
+  .card{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- App Bar -->
+<div class="app-bar">
+  <div class="logo"><span class="split">Split</span><span class="smart">Smart</span></div>
+  <div class="session-badge" id="session-badge">New Session</div>
+</div>
+
+<!-- Step Progress -->
+<div class="steps-wrap">
+  <div class="steps">
+    <div class="step active" id="si-1"><div class="step-circle">1</div><div class="step-label">Setup</div></div>
+    <div class="step" id="si-2"><div class="step-circle">2</div><div class="step-label">Items</div></div>
+    <div class="step" id="si-3"><div class="step-circle">3</div><div class="step-label">Adjust</div></div>
+    <div class="step" id="si-4"><div class="step-circle">4</div><div class="step-label">Results</div></div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════ STEP 1: SETUP ══════════════════ -->
+<div class="step-page active" id="page-1">
+  <div class="card">
+    <div class="card-title">New Split Session</div>
+    <div class="card-sub">Name your session, pick currency, add everyone splitting</div>
+    <div class="row" style="margin-bottom:16px;">
+      <div style="flex:2;">
+        <label>Session Name</label>
+        <input type="text" id="session-name" placeholder="e.g. Barbeque Nation — Friday" oninput="updateBadge()" />
+      </div>
+      <div style="flex:1;">
+        <label>Currency</label>
+        <select id="currency">
+          <option value="₹">₹ Rupee</option>
+          <option value="$">$ Dollar</option>
+          <option value="€">€ Euro</option>
+          <option value="£">£ Pound</option>
+          <option value="¥">¥ Yen</option>
+          <option value="AED">AED</option>
+          <option value="SGD">SGD</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="divider" style="margin:0 0 16px;"></div>
+
+    <div class="legend">
+      <span><span class="legend-dot" style="background:var(--veg)"></span>Veg</span>
+      <span><span class="legend-dot" style="background:var(--nonveg)"></span>Non-veg</span>
+      <span><span class="legend-dot" style="background:#F59E0B"></span>Paid the bill</span>
+    </div>
+
+    <div class="section-hd">People (<span id="people-count">0</span>)</div>
+    <div class="person-list" id="person-list">
+      <div class="empty"><div class="empty-ico">👥</div>No one added yet</div>
+    </div>
+
+    <div class="add-box">
+      <div class="add-box-title">Add Person</div>
+      <div class="row" style="margin-bottom:10px;">
+        <div style="flex:2;"><input type="text" id="p-name" placeholder="Name" onkeydown="if(event.key==='Enter')addPerson()" /></div>
+        <div style="flex:1;">
+          <select id="p-diet">
+            <option value="veg">🟢 Veg</option>
+            <option value="nonveg">🔴 Non-Veg</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:14px;color:var(--text);font-weight:400;">
+          <input type="checkbox" id="p-paid" style="width:auto;accent-color:var(--primary);" />
+          Paid the bill
+        </label>
+        <button class="btn btn-primary" onclick="addPerson()">+ Add Person</button>
+      </div>
+    </div>
+  </div>
+  <div class="nav-row" style="justify-content:flex-end;">
+    <button class="btn btn-primary" onclick="goStep(2)" style="padding:12px 28px;font-size:16px;">Next: Add Items →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ STEP 2: ITEMS ══════════════════ -->
+<div class="step-page" id="page-2">
+  <div class="card">
+    <div class="card-title">Bill Items</div>
+    <div class="card-sub">Add manually or scan your bill with AI</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tb-manual" onclick="swTab('manual',this)">✏️ Manual Entry</button>
+      <button class="tab-btn" id="tb-scan" onclick="swTab('scan',this)">📷 AI Scan Bill</button>
+    </div>
+
+    <!-- Manual -->
+    <div id="pane-manual">
+      <div class="add-box">
+        <div class="add-box-title">Add Item</div>
+        <div class="row" style="margin-bottom:10px;">
+          <div style="flex:3;"><input type="text" id="i-name" placeholder="Item name (e.g. Butter Chicken)" onkeydown="if(event.key==='Enter')addItem()" /></div>
+          <div style="flex:1;"><input type="number" id="i-qty" placeholder="Qty" value="1" min="1" /></div>
+          <div style="flex:1.5;"><input type="number" id="i-price" placeholder="Price" step="0.01" onkeydown="if(event.key==='Enter')addItem()" /></div>
+        </div>
+        <div class="row">
+          <select id="i-tag">
+            <option value="veg">🟢 Veg</option>
+            <option value="nonveg">🔴 Non-Veg</option>
+            <option value="shared">🟣 Shared</option>
+          </select>
+          <button class="btn btn-primary" onclick="addItem()">+ Add Item</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Scan -->
+    <div id="pane-scan" style="display:none;">
+      <div class="upload-zone" id="upload-zone"
+        onclick="document.getElementById('bill-file').click()"
+        ondragover="event.preventDefault();this.classList.add('dragging')"
+        ondragleave="this.classList.remove('dragging')"
+        ondrop="handleDrop(event)">
+        <input type="file" id="bill-file" accept="image/*" style="display:none;" onchange="scanBill(event)" />
+        <span class="upload-icon-big">📄</span>
+        <div class="upload-title">Drop your bill here</div>
+        <div class="upload-sub">or click to upload · JPG, PNG, HEIC</div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-outline btn-sm" style="pointer-events:none;">Choose Photo</button>
+        </div>
+      </div>
+      <div id="scan-status" style="margin-top:6px;"></div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="section-hd" style="margin:0;">Items (<span id="item-count">0</span>)</div>
+        <span style="font-size:13px;color:var(--muted);">Tap tag to cycle ↓</span>
+      </div>
+      <div id="item-list">
+        <div class="empty"><div class="empty-ico">🧾</div>No items yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared assignment panels -->
+  <div id="shared-panels"></div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+    <button class="btn btn-primary" onclick="goStep(3)">Next: Adjustments →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ STEP 3: ADJUSTMENTS ══════════════════ -->
+<div class="step-page" id="page-3">
+  <div class="card">
+    <div class="card-title">Adjustments</div>
+    <div class="card-sub">Add tax, tip, discount — click unit badge to switch % ↔ fixed</div>
+
+    <div class="adj-row">
+      <div class="adj-label">🧾 Tax / GST</div>
+      <div class="adj-wrap">
+        <input type="number" id="tax-v" placeholder="0" min="0" step="0.5" oninput="previewAdj()" />
+        <div class="adj-unit" id="tax-u" onclick="togUnit('tax')">%</div>
+      </div>
+    </div>
+    <div class="adj-row">
+      <div class="adj-label">🤝 Tip / Service</div>
+      <div class="adj-wrap">
+        <input type="number" id="tip-v" placeholder="0" min="0" step="1" oninput="previewAdj()" />
+        <div class="adj-unit" id="tip-u" onclick="togUnit('tip')">%</div>
+      </div>
+    </div>
+    <div class="adj-row">
+      <div class="adj-label">🎁 Discount / Coupon</div>
+      <div class="adj-wrap">
+        <input type="number" id="dis-v" placeholder="0" min="0" step="1" oninput="previewAdj()" />
+        <div class="adj-unit" id="dis-u" onclick="togUnit('dis')">%</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="adj-preview" id="adj-preview">
+      <div style="color:var(--muted);font-size:14px;text-align:center;">Add items first to see preview</div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="goStep(2)">← Back</button>
+    <button class="btn btn-primary" onclick="doCalc();goStep(4)" style="padding:12px 28px;font-size:16px;">🧮 Calculate Split →</button>
+  </div>
+</div>
+
+<!-- ══════════════════ STEP 4: RESULTS ══════════════════ -->
+<div class="step-page" id="page-4">
+  <div class="hero-box">
+    <div class="hero-title" id="r-name">—</div>
+    <div class="hero-date" id="r-date">—</div>
+    <div class="hero-total" id="r-total">₹0</div>
+    <div class="hero-actions">
+      <button class="btn-glass solid" onclick="copySum()">📋 Copy Summary</button>
+      <button class="btn-glass" onclick="goStep(1);resetAll()">+ New Split</button>
+    </div>
+  </div>
+
+  <div class="metric-grid" id="metric-grid"></div>
+
+  <div class="card">
+    <div class="section-hd" style="margin-bottom:14px;">Per Person Breakdown</div>
+    <div id="person-results"></div>
+  </div>
+
+  <div class="card" id="settle-card" style="display:none;">
+    <div class="section-hd">Settlement Plan</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Minimum transactions needed to settle all debts</div>
+    <div id="settle-list"></div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-outline" onclick="goStep(3)">← Edit Adjustments</button>
+    <button class="btn btn-outline" onclick="goStep(2)">← Edit Items</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+const S = {
+  name: '',
+  currency: '₹',
+  people: [],     // {name, diet, paidBy}
+  items: [],      // {name, qty, price, tag}
+  shared: {},     // {itemIndex: [names]}
+  adj: { tax:{ v:0,u:'%' }, tip:{ v:0,u:'%' }, dis:{ v:0,u:'%' } },
+  results: null
+};
+
+const COLORS = ['#4361EE','#059669','#DC2626','#7C3AED','#D97706','#0891B2','#DB2777','#65A30D','#9333EA','#16A34A'];
+const ini = n => n.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2);
+const col = i => COLORS[i % COLORS.length];
+const cur = () => document.getElementById('currency').value;
+const fmt = n => `${cur()}${parseFloat(n).toFixed(2)}`;
+
+// ── NAVIGATION ─────────────────────────────────────────
+let step = 1;
+function goStep(n) {
+  if (n >= 2 && S.people.length === 0) { toast('Add at least one person first!'); return; }
+  if (n >= 3 && S.items.length === 0) { toast('Add at least one item first!'); return; }
+  if (n >= 3) {
+    const unres = S.items.filter((it,i) => it.tag==='shared' && (!S.shared[i] || !S.shared[i].length));
+    if (unres.length) { toast(`Assign shared: ${unres.map(i=>i.name).join(', ')}`); return; }
+  }
+  S.name = document.getElementById('session-name').value.trim() || 'Split Session';
+  S.currency = cur();
+  updateBadge();
+  document.getElementById(`page-${step}`).classList.remove('active');
+  step = n;
+  document.getElementById(`page-${n}`).classList.add('active');
+  for (let i=1;i<=4;i++) {
+    const el = document.getElementById(`si-${i}`);
+    el.classList.remove('active','done');
+    if (i<n) el.classList.add('done');
+    else if (i===n) el.classList.add('active');
+  }
+  if (n===3) previewAdj();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateBadge() {
+  const v = document.getElementById('session-name').value.trim();
+  document.getElementById('session-badge').textContent = v || 'New Session';
+}
+
+// ── PEOPLE ─────────────────────────────────────────────
+function addPerson() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { toast('Enter a name'); return; }
+  if (S.people.find(p=>p.name.toLowerCase()===name.toLowerCase())) { toast('Name already added'); return; }
+  S.people.push({ name, diet: document.getElementById('p-diet').value, paidBy: document.getElementById('p-paid').checked });
+  document.getElementById('p-name').value = '';
+  document.getElementById('p-paid').checked = false;
+  renderPeople(); renderShared();
+}
+
+function removePerson(i) { S.people.splice(i,1); renderPeople(); renderShared(); }
+function setDiet(i,d) { S.people[i].diet=d; renderPeople(); renderItems(); }
+
+function renderPeople() {
+  const el = document.getElementById('person-list');
+  document.getElementById('people-count').textContent = S.people.length;
+  if (!S.people.length) { el.innerHTML='<div class="empty"><div class="empty-ico">👥</div>No one added yet</div>'; return; }
+  el.innerHTML = S.people.map((p,i) => `
+    <div class="person-item" style="border-color:${p.diet==='veg'?'rgba(5,150,105,0.2)':'rgba(220,38,38,0.2)'}">
+      <div class="person-avatar" style="background:${col(i)}">${ini(p.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="person-name">${p.name}</div>
+        ${p.paidBy?'<span class="paidby-chip">💳 Paid bill</span>':''}
+      </div>
+      <div class="diet-toggle">
+        <button class="diet-btn ${p.diet==='veg'?'av':''}" onclick="setDiet(${i},'veg')">Veg</button>
+        <button class="diet-btn ${p.diet==='nonveg'?'anv':''}" onclick="setDiet(${i},'nonveg')">Non-veg</button>
+      </div>
+      <button class="btn btn-ghost btn-icon" onclick="removePerson(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+// ── ITEMS ──────────────────────────────────────────────
+function addItem(name,qty,price,tag) {
+  const n = name || document.getElementById('i-name').value.trim();
+  const q = parseInt(qty||document.getElementById('i-qty').value)||1;
+  const p = parseFloat(price!==undefined?price:document.getElementById('i-price').value);
+  const t = tag||document.getElementById('i-tag').value;
+  if (!n) { toast('Enter item name'); return; }
+  if (isNaN(p)||p<=0) { toast('Enter valid price'); return; }
+  S.items.push({ name:n, qty:q, price:parseFloat(p.toFixed(2)), tag:t });
+  if (!name) {
+    document.getElementById('i-name').value='';
+    document.getElementById('i-price').value='';
+    document.getElementById('i-qty').value='1';
+  }
+  renderItems(); renderShared();
+}
+
+function removeItem(idx) {
+  S.items.splice(idx,1);
+  // re-index shared
+  const ns={};
+  Object.entries(S.shared).forEach(([k,v])=>{
+    const ki=parseInt(k);
+    if(ki<idx) ns[ki]=v;
+    else if(ki>idx) ns[ki-1]=v;
+  });
+  S.shared=ns;
+  renderItems(); renderShared();
+}
+
+function cycleTag(idx) {
+  const tags=['veg','nonveg','shared'];
+  S.items[idx].tag = tags[(tags.indexOf(S.items[idx].tag)+1)%3];
+  if (S.items[idx].tag!=='shared') delete S.shared[idx];
+  renderItems(); renderShared();
+}
+
+function renderItems() {
+  const el = document.getElementById('item-list');
+  document.getElementById('item-count').textContent = S.items.length;
+  if (!S.items.length) { el.innerHTML='<div class="empty"><div class="empty-ico">🧾</div>No items yet</div>'; return; }
+  const dotColor = {veg:'var(--veg)',nonveg:'var(--nonveg)',shared:'var(--shared)'};
+  el.innerHTML = S.items.map((it,i) => {
+    const assigned = it.tag==='veg'
+      ? S.people.filter(p=>p.diet==='veg').map(p=>p.name).join(', ')||'—'
+      : it.tag==='nonveg'
+      ? S.people.filter(p=>p.diet==='nonveg').map(p=>p.name).join(', ')||'—'
+      : (S.shared[i]||[]).join(', ')||'<span style="color:#F59E0B;font-size:12px;">⚠ Assign below</span>';
+    return `<div class="item-row">
+      <div class="item-dot" style="background:${dotColor[it.tag]}"></div>
+      <div class="item-name">${it.name}${it.qty>1?` <span class="qty-badge">×${it.qty}</span>`:''}</div>
+      <span class="tag-pill tag-${it.tag}" onclick="cycleTag(${i})" title="Tap to change">${it.tag==='veg'?'Veg':it.tag==='nonveg'?'Non-Veg':'Shared'}</span>
+      <div style="font-size:12px;color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${assigned}</div>
+      <div class="item-price">${fmt(it.price*it.qty)}</div>
+      <button class="btn btn-ghost btn-icon" style="font-size:13px;" onclick="removeItem(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── SHARED PANELS ──────────────────────────────────────
+function renderShared() {
+  const el = document.getElementById('shared-panels');
+  const shared = S.items.map((it,i)=>({...it,idx:i})).filter(it=>it.tag==='shared');
+  if (!shared.length) { el.innerHTML=''; return; }
+  el.innerHTML = shared.map(it => {
+    const asgn = S.shared[it.idx]||[];
+    return `<div class="shared-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px;">
+        <span class="tag-pill tag-shared">Shared</span>
+        <span style="font-weight:600;font-size:15px;">${it.name}</span>
+        <span style="color:var(--muted);font-size:13px;margin-left:auto;">${fmt(it.price*it.qty)}</span>
+      </div>
+      <div class="shared-title">Who splits this item?</div>
+      <div class="chip-grid">
+        ${S.people.map(p=>{
+          const on = asgn.includes(p.name);
+          return `<div class="check-chip ${on?'on':''}" onclick="togShared(${it.idx},'${p.name}')">
+            <div class="mini-dot" style="background:${on?'#fff':(p.diet==='veg'?'var(--veg)':'var(--nonveg)')}"></div>
+            ${p.name}
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="shAll(${it.idx})">All</button>
+        <button class="btn btn-sm" style="background:var(--veg-light);color:var(--veg);border:1px solid var(--veg-mid);" onclick="shVeg(${it.idx})">All Veg</button>
+        <button class="btn btn-sm" style="background:var(--nonveg-light);color:var(--nonveg);border:1px solid var(--nonveg-mid);" onclick="shNV(${it.idx})">All Non-Veg</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togShared(idx,name) {
+  if(!S.shared[idx]) S.shared[idx]=[];
+  const i=S.shared[idx].indexOf(name);
+  if(i>=0) S.shared[idx].splice(i,1); else S.shared[idx].push(name);
+  renderShared();
+}
+function shAll(idx) { S.shared[idx]=S.people.map(p=>p.name); renderShared(); }
+function shVeg(idx) { S.shared[idx]=S.people.filter(p=>p.diet==='veg').map(p=>p.name); renderShared(); }
+function shNV(idx) { S.shared[idx]=S.people.filter(p=>p.diet==='nonveg').map(p=>p.name); renderShared(); }
+
+// ── ADJUSTMENTS ────────────────────────────────────────
+function togUnit(type) {
+  const el = document.getElementById(`${type}-u`);
+  el.textContent = el.textContent==='%' ? cur() : '%';
+  previewAdj();
+}
+
+function calcAdj() {
+  const sub = S.items.reduce((s,it)=>s+it.price*it.qty,0);
+  const get = type => {
+    const v = parseFloat(document.getElementById(`${type}-v`).value)||0;
+    const u = document.getElementById(`${type}-u`).textContent;
+    return u==='%' ? sub*v/100 : v;
+  };
+  const tax=get('tax'), tip=get('tip'), dis=get('dis');
+  return { sub, tax, tip, dis, total: Math.max(0,sub+tax+tip-dis) };
+}
+
+function previewAdj() {
+  const {sub,tax,tip,dis,total} = calcAdj();
+  const c = cur();
+  const taxV = parseFloat(document.getElementById('tax-v').value)||0;
+  const tipV = parseFloat(document.getElementById('tip-v').value)||0;
+  const disV = parseFloat(document.getElementById('dis-v').value)||0;
+  const taxU = document.getElementById('tax-u').textContent;
+  const tipU = document.getElementById('tip-u').textContent;
+  const disU = document.getElementById('dis-u').textContent;
+  document.getElementById('adj-preview').innerHTML = `
+    <div class="adj-line"><span style="color:var(--muted)">Subtotal</span><span style="font-weight:500">${c}${sub.toFixed(2)}</span></div>
+    ${tax>0?`<div class="adj-line"><span style="color:var(--muted)">Tax / GST (${taxV}${taxU})</span><span style="color:var(--nonveg)">+${c}${tax.toFixed(2)}</span></div>`:''}
+    ${tip>0?`<div class="adj-line"><span style="color:var(--muted)">Tip / Service (${tipV}${tipU})</span><span style="color:var(--nonveg)">+${c}${tip.toFixed(2)}</span></div>`:''}
+    ${dis>0?`<div class="adj-line"><span style="color:var(--muted)">Discount (${disV}${disU})</span><span style="color:var(--veg)">−${c}${dis.toFixed(2)}</span></div>`:''}
+    <div class="adj-line total"><span>Grand Total</span><span>${c}${total.toFixed(2)}</span></div>
+  `;
+}
+
+// ── CALCULATE ──────────────────────────────────────────
+function doCalc() {
+  const c = cur(); S.currency = c;
+  const {sub, tax, tip, dis, total} = calcAdj();
+  const factor = sub > 0 ? total / sub : 1;
+
+  const totals={}, breakdown={};
+  S.people.forEach(p=>{ totals[p.name]=0; breakdown[p.name]=[]; });
+
+  S.items.forEach((it,i) => {
+    let payers = it.tag==='veg'
+      ? S.people.filter(p=>p.diet==='veg').map(p=>p.name)
+      : it.tag==='nonveg'
+      ? S.people.filter(p=>p.diet==='nonveg').map(p=>p.name)
+      : S.shared[i]||[];
+    if (!payers.length) return;
+    const rawShare = (it.price*it.qty)/payers.length;
+    const adjShare = parseFloat((rawShare*factor).toFixed(2));
+    payers.forEach(name => {
+      if(totals[name]!==undefined) {
+        totals[name]=parseFloat((totals[name]+adjShare).toFixed(2));
+        breakdown[name].push({name:it.name,qty:it.qty,amt:adjShare});
+      }
+    });
+  });
+
+  // Settlement: greedy debt simplification
+  const bal={};
+  S.people.forEach(p => {
+    const paid = p.paidBy ? total : 0;
+    bal[p.name] = parseFloat((paid-(totals[p.name]||0)).toFixed(2));
+  });
+  const settlements = simplify(bal);
+
+  S.results = { c, sub, tax, tip, dis, total, factor, totals, breakdown, settlements };
+  renderResults();
+}
+
+function simplify(bal) {
+  const cr=[], db=[];
+  Object.entries(bal).forEach(([n,b]) => {
+    if(b>0.005) cr.push([n,b]); else if(b<-0.005) db.push([n,-b]);
+  });
+  const tx=[]; let ci=0,di=0;
+  while(ci<cr.length && di<db.length) {
+    const [cn,ca]=cr[ci],[dn,da]=db[di];
+    const amt=Math.min(ca,da);
+    if(amt>0.005) tx.push({from:dn,to:cn,amt:parseFloat(amt.toFixed(2))});
+    cr[ci][1]-=amt; db[di][1]-=amt;
+    if(cr[ci][1]<0.005) ci++;
+    if(db[di][1]<0.005) di++;
+  }
+  return tx;
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────
+function renderResults() {
+  const r = S.results; if(!r) return;
+  const c = r.c;
+  document.getElementById('r-name').textContent = S.name || 'Split Session';
+  document.getElementById('r-date').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('r-total').textContent = `${c}${r.total.toFixed(2)}`;
+
+  const avg = S.people.length ? r.total/S.people.length : 0;
+  document.getElementById('metric-grid').innerHTML = `
+    <div class="metric-card"><div class="metric-val">${c}${r.total.toFixed(0)}</div><div class="metric-lbl">Total</div></div>
+    <div class="metric-card"><div class="metric-val">${S.people.length}</div><div class="metric-lbl">People</div></div>
+    <div class="metric-card"><div class="metric-val">${c}${avg.toFixed(0)}</div><div class="metric-lbl">Avg / Person</div></div>
+  `;
+
+  const maxAmt = Math.max(...Object.values(r.totals), 1);
+  document.getElementById('person-results').innerHTML = S.people.map((p,pi) => {
+    const amt = r.totals[p.name]||0;
+    const bpct = (amt/maxAmt)*100;
+    const items = r.breakdown[p.name]||[];
+    const dietColor = p.diet==='veg'?'var(--veg)':'var(--nonveg)';
+    return `<div class="pr-card" id="prc-${pi}">
+      <div class="pr-header" onclick="togBD(${pi})">
+        <div class="person-avatar" style="background:${col(pi)};width:36px;height:36px;font-size:12px;">${ini(p.name)}</div>
+        <div class="pr-info">
+          <div class="pr-name">${p.name}</div>
+          <div class="pr-diet" style="color:${dietColor}">${p.diet==='veg'?'Veg ·':'Non-Veg ·'} ${items.length} item${items.length!==1?'s':''}</div>
+        </div>
+        <div class="pr-amount" style="color:${col(pi)}">${c}${amt.toFixed(2)}</div>
+        <div class="pr-chevron" id="chv-${pi}">›</div>
+      </div>
+      <div class="bar-wrap"><div class="bar" id="bar-${pi}" style="background:${col(pi)}"></div></div>
+      <div class="bd-list" id="bd-${pi}">
+        <div style="padding-top:10px;">
+          ${items.map(it=>`<div class="bd-row"><span class="bi">${it.name}${it.qty>1?` ×${it.qty}`:''}</span><span class="ba">${c}${it.amt.toFixed(2)}</span></div>`).join('')||'<div class="bd-row"><span class="bi">Nothing assigned</span></div>'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  setTimeout(() => {
+    S.people.forEach((_,pi) => {
+      const amt = S.results.totals[S.people[pi].name]||0;
+      const b = document.getElementById(`bar-${pi}`);
+      if(b) b.style.width = (amt/maxAmt*100)+'%';
+    });
+  }, 80);
+
+  const sc = document.getElementById('settle-card');
+  const sl = document.getElementById('settle-list');
+  if (!r.settlements.length) { sc.style.display='none'; return; }
+  sc.style.display='';
+  sl.innerHTML = r.settlements.map(s => {
+    const fi = S.people.findIndex(p=>p.name===s.from);
+    const ti = S.people.findIndex(p=>p.name===s.to);
+    return `<div class="settle-item">
+      <div class="person-avatar" style="background:${col(fi)};width:30px;height:30px;font-size:11px;">${ini(s.from)}</div>
+      <div><div class="s-from">${s.from}</div><div class="s-sub">pays</div></div>
+      <div class="s-arrow">→</div>
+      <div><div class="s-to">${s.to}</div><div class="s-sub">receives</div></div>
+      <div class="s-amt">${c}${s.amt.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+
+function togBD(pi) {
+  const bd = document.getElementById(`bd-${pi}`);
+  const ch = document.getElementById(`chv-${pi}`);
+  const open = bd.classList.toggle('open');
+  ch.classList.toggle('open', open);
+}
+
+// ── AI SCAN ────────────────────────────────────────────
+async function scanBill(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const st = document.getElementById('scan-status');
+  st.innerHTML = `<div class="spin-box"><div class="spinner"></div><div class="spin-text">Reading bill with AI…</div><div style="font-size:13px;color:var(--muted);">Identifying items, quantities and prices</div></div>`;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const b64 = reader.result.split(',')[1];
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1000,
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:file.type,data:b64}},
+            {type:'text',text:'Extract every food and drink line item from this restaurant/food bill. Return ONLY a JSON array, no markdown, no explanation. Schema: [{"name":"Item Name","qty":1,"price":150.00,"tag":"veg"}]. Rules: tag must be "veg" for vegetarian, "nonveg" for any meat/fish/egg dish, "shared" for drinks/water/rice/bread/shared sides. price = total for that line (unit price × qty). qty is integer. price is float.'}
+          ]}]
+        })
+      });
+      const data = await res.json();
+      const txt = data.content.map(c=>c.text||'').join('');
+      const parsed = JSON.parse(txt.replace(/```json|```/g,'').trim());
+      parsed.forEach(it=>addItem(it.name,it.qty||1,it.price,it.tag||'shared'));
+      st.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:12px 0;color:var(--veg);font-weight:500;font-size:15px;"><span style="font-size:22px;">✓</span> Found ${parsed.length} items!</div>`;
+      swTab('manual',document.getElementById('tb-manual'));
+      toast(`✓ Added ${parsed.length} items from bill`);
+    } catch(err) {
+      st.innerHTML=`<div style="padding:12px 0;color:var(--nonveg);font-size:14px;">⚠ Could not read bill — try again or add manually.</div>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragging');
+  const file = e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('image/')) scanBill({target:{files:[file]}});
+}
+
+// ── COPY SUMMARY ───────────────────────────────────────
+function copySum() {
+  const r = S.results; if(!r) return;
+  const c = r.c;
+  let t = `${S.name || 'Split Session'}\n${'─'.repeat(30)}\n`;
+  t += `Date: ${new Date().toLocaleDateString()}\n`;
+  t += `Total: ${c}${r.total.toFixed(2)}\n\n`;
+  S.people.forEach(p => {
+    t += `${p.name}: ${c}${(r.totals[p.name]||0).toFixed(2)}\n`;
+  });
+  if(r.settlements.length) {
+    t += `\n${'─'.repeat(30)}\nSettlement:\n`;
+    r.settlements.forEach(s=>{ t+=`${s.from} → ${s.to}: ${c}${s.amt.toFixed(2)}\n`; });
+  }
+  navigator.clipboard.writeText(t).then(()=>toast('✓ Summary copied!')).catch(()=>toast('Copy failed'));
+}
+
+// ── RESET ──────────────────────────────────────────────
+function resetAll() {
+  S.people=[]; S.items=[]; S.shared={}; S.results=null; S.name='';
+  ['session-name','p-name','i-name','i-price','tax-v','tip-v','dis-v'].forEach(id => {
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('i-qty').value='1';
+  renderPeople(); renderItems(); renderShared();
+  updateBadge();
+}
+
+// ── TAB SWITCH ─────────────────────────────────────────
+function swTab(t, btn) {
+  document.getElementById('pane-manual').style.display=t==='manual'?'':'none';
+  document.getElementById('pane-scan').style.display=t==='scan'?'':'none';
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+// ── INIT ───────────────────────────────────────────────
+renderPeople(); renderItems(); previewAdj();
+</script>
+</body>
+</html>
